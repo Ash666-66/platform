@@ -23,8 +23,9 @@
 </template>
 
 <script>
+const mockData = require('../mock/data');
 export default {
-  data() {
+  data: function() {
     return {
       reviewForm: {
         productId: '',
@@ -44,44 +45,38 @@ export default {
       }
     }
   },
-  mounted() {
+  mounted: function() {
     // 从路由参数中获取交易信息
-    const { productId, productName, sellerId, sellerName } = this.$route.query;
-    this.reviewForm.productId = productId;
-    this.reviewForm.productName = productName;
-    this.reviewForm.sellerId = sellerId;
-    this.reviewForm.sellerName = sellerName;
+    var query = this.$route.query;
+    this.reviewForm.productId = query.productId;
+    this.reviewForm.productName = query.productName;
+    this.reviewForm.sellerId = query.sellerId;
+    this.reviewForm.sellerName = query.sellerName;
   },
   methods: {
-    submitForm() {
-      this.$refs.reviewForm.validate((valid) => {
+    submitForm: function() {
+      this.$refs.reviewForm.validate(function(valid) {
         if (valid) {
-          const user = JSON.parse(localStorage.getItem('user'));
-          const review = {
+          var user = JSON.parse(localStorage.getItem('user'));
+          var review = {
+            id: mockData.reviews.length + 1,
             productId: this.reviewForm.productId,
             reviewerId: user.id,
-            reviewedId: this.reviewForm.sellerId,
+            reviewedUserId: this.reviewForm.sellerId,
             content: this.reviewForm.content,
-            rating: this.reviewForm.rating
+            rating: this.reviewForm.rating,
+            createdAt: new Date()
           };
-          this.$axios.post('/api/review/add', review)
-            .then(response => {
-              if (response.data.success) {
-                this.$message.success('评价成功');
-                this.$router.push('/buyer-transactions');
-              } else {
-                this.$message.error(response.data.message);
-              }
-            })
-            .catch(error => {
-              this.$message.error('评价失败：' + error.message);
-            });
+          // 使用模拟数据提交评价
+          mockData.reviews.push(review);
+          this.$message.success('评价成功');
+          this.$router.push('/buyer-transactions');
         } else {
           return false;
         }
-      });
+      }.bind(this));
     },
-    resetForm() {
+    resetForm: function() {
       this.$refs.reviewForm.resetFields();
     }
   }

@@ -25,26 +25,30 @@
 <script>
 export default {
   name: 'App',
-  data() {
+  data: function() {
     return {
       activeIndex: '/',
       user: null
     }
   },
-  mounted() {
-    this.user = JSON.parse(localStorage.getItem('user'));
+  mounted: function() {
+    this.checkLoginStatus();
     this.activeIndex = this.$route.path;
   },
   watch: {
     $route: function(to) {
       this.activeIndex = to.path;
+      this.checkLoginStatus();
     }
   },
   methods: {
-    handleSelect(key) {
+    checkLoginStatus: function() {
+      this.user = JSON.parse(localStorage.getItem('user'));
+    },
+    handleSelect: function(key) {
       this.$router.push(key);
     },
-    logout() {
+    logout: function() {
       localStorage.removeItem('user');
       this.user = null;
       this.$router.push('/login');
@@ -67,12 +71,17 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
+  padding: 0 30px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .logo {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: bold;
+  letter-spacing: 1px;
 }
 
 .el-menu-demo {
@@ -81,16 +90,24 @@ export default {
 }
 
 .el-menu-item {
-  color: white;
+  color: #ffffff;
+  font-weight: 500;
+  font-size: 15px;
+  margin: 0 5px;
+  transition: all 0.3s ease;
 }
 
 .el-menu-item:hover {
+  color: #ffffff;
   background-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
 }
 
 .el-menu-item.is-active {
-  color: white;
+  color: #ffffff;
+  font-weight: 600;
   background-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .el-main {

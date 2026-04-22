@@ -8,12 +8,14 @@ import axios from 'axios'
 Vue.use(ElementUI)
 
 // 配置axios
-axios.defaults.baseURL = 'http://localhost:8080'
+axios.defaults.baseURL = '/api'
 Vue.prototype.$axios = axios
 
 Vue.config.productionTip = false
 
 new Vue({
   router,
-  render: h => h(App)
+  render: function(h) {
+    return h(App);
+  }
 }).$mount('#app')

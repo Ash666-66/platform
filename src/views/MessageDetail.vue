@@ -4,7 +4,7 @@
     <el-card v-if="message" class="message-card">
       <div class="message-content">
         <el-descriptions :column="1">
-          <el-descriptions-item label="发送者">{{ sender?.username || '未知' }}</el-descriptions-item>
+          <el-descriptions-item label="发送者">{{ sender && sender.username || '未知' }}</el-descriptions-item>
           <el-descriptions-item label="内容">{{ message.content }}</el-descriptions-item>
           <el-descriptions-item label="类型">
             <el-tag v-if="message.type === 1" type="info">系统消息</el-tag>
@@ -27,51 +27,50 @@
 </template>
 
 <script>
+const mockData = require('../mock/data');
 export default {
-  data() {
+  data: function() {
     return {
       message: null,
       sender: null
     }
   },
-  mounted() {
+  mounted: function() {
     this.loadMessageDetail();
   },
   methods: {
-    loadMessageDetail() {
-      const id = this.$route.params.id;
-      this.$axios.get(`/api/message/detail/${id}`)
-        .then(response => {
-          if (response.data.success) {
-            this.message = response.data.message;
-            this.loadSenderInfo(this.message.senderId);
-          } else {
-            this.$message.error(response.data.message);
-          }
-        })
-        .catch(error => {
-          this.$message.error('加载消息详情失败：' + error.message);
-        });
+    loadMessageDetail: function() {
+      var id = this.$route.params.id;
+      // 使用模拟数据
+      var message = mockData.messages.find(function(m) {
+        return m.id === parseInt(id);
+      });
+      if (message) {
+        this.message = message;
+        this.loadSenderInfo(this.message.senderId);
+        this.$message.success('加载消息详情成功');
+      } else {
+        this.$message.error('消息不存在');
+      }
     },
-    loadSenderInfo(senderId) {
+    loadSenderInfo: function(senderId) {
       // 这里需要一个获取用户信息的API，暂时模拟
       this.sender = {
         username: '用户123'
       };
     },
-    markAsRead() {
-      this.$axios.put(`/api/message/mark-as-read/${this.message.id}`)
-        .then(response => {
-          if (response.data.success) {
-            this.$message.success('标记已读成功');
-            this.loadMessageDetail();
-          } else {
-            this.$message.error(response.data.message);
-          }
-        })
-        .catch(error => {
-          this.$message.error('标记已读失败：' + error.message);
-        });
+    markAsRead: function() {
+      // 使用模拟数据标记消息为已读
+      var message = mockData.messages.find(function(m) {
+        return m.id === this.message.id;
+      }.bind(this));
+      if (message) {
+        message.status = 1;
+        this.$message.success('标记已读成功');
+        this.loadMessageDetail();
+      } else {
+        this.$message.error('消息不存在');
+      }
     }
   }
 }

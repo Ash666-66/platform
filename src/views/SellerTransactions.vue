@@ -30,62 +30,60 @@
 </template>
 
 <script>
+const mockData = require('../mock/data');
 export default {
-  data() {
+  data: function() {
     return {
       transactions: []
     }
   },
-  mounted() {
+  mounted: function() {
     this.loadSellerTransactions();
   },
   methods: {
-    loadSellerTransactions() {
-      const user = JSON.parse(localStorage.getItem('user'));
-      this.$axios.get(`/api/transaction/seller/${user.id}`)
-        .then(response => {
-          if (response.data.success) {
-            this.transactions = response.data.transactions;
-            // 这里需要加载商品信息，暂时模拟
-            this.transactions.forEach(transaction => {
-              transaction.productName = '商品名称';
-            });
-          }
-        })
-        .catch(error => {
-          this.$message.error('加载交易记录失败：' + error.message);
+    loadSellerTransactions: function() {
+      var user = JSON.parse(localStorage.getItem('user'));
+      // 使用模拟数据加载卖家的交易记录
+      this.transactions = mockData.transactions.filter(function(t) {
+        return t.sellerId === user.id;
+      });
+      // 加载商品信息
+      this.transactions.forEach(function(transaction) {
+        var product = mockData.products.find(function(p) {
+          return p.id === transaction.productId;
         });
+        transaction.productName = product ? product.name : '商品名称';
+      });
+      this.$message.success('加载交易记录成功', { duration: 500 });
     },
-    viewDetail(id) {
-      this.$router.push(`/transaction-detail/${id}`);
+    viewDetail: function(id) {
+      this.$router.push('/transaction-detail/' + id);
     },
-    confirmTransaction(id) {
-      this.$axios.put(`/api/transaction/update-status/${id}?status=2`)
-        .then(response => {
-          if (response.data.success) {
-            this.$message.success('确认交易成功');
-            this.loadSellerTransactions();
-          } else {
-            this.$message.error(response.data.message);
-          }
-        })
-        .catch(error => {
-          this.$message.error('确认交易失败：' + error.message);
-        });
+    confirmTransaction: function(id) {
+      // 使用模拟数据更新交易状态
+      var transaction = mockData.transactions.find(function(t) {
+        return t.id === id;
+      });
+      if (transaction) {
+        transaction.status = 2;
+        this.$message.success('确认交易成功');
+        this.loadSellerTransactions();
+      } else {
+        this.$message.error('交易不存在');
+      }
     },
-    ship(id) {
-      this.$axios.put(`/api/transaction/update-status/${id}?status=6`)
-        .then(response => {
-          if (response.data.success) {
-            this.$message.success('发货成功');
-            this.loadSellerTransactions();
-          } else {
-            this.$message.error(response.data.message);
-          }
-        })
-        .catch(error => {
-          this.$message.error('发货失败：' + error.message);
-        });
+    ship: function(id) {
+      // 使用模拟数据更新交易状态
+      var transaction = mockData.transactions.find(function(t) {
+        return t.id === id;
+      });
+      if (transaction) {
+        transaction.status = 6;
+        this.$message.success('发货成功');
+        this.loadSellerTransactions();
+      } else {
+        this.$message.error('交易不存在');
+      }
     }
   }
 }

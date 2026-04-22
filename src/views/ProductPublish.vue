@@ -1,6 +1,6 @@
 <template>
   <div class="product-publish-container">
-    <h2>发布商品</h2>
+    <h2>{{ isEdit ? '编辑商品' : '发布商品' }}</h2>
     <el-form :model="form" :rules="rules" ref="form" label-width="100px">
       <el-form-item label="商品名称" prop="name">
         <el-input v-model="form.name" placeholder="请输入商品名称"></el-input>
@@ -32,7 +32,7 @@
         </div>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" @click="publish">发布商品</el-button>
+        <el-button type="primary" @click="publish">{{ isEdit ? '保存修改' : '发布商品' }}</el-button>
         <el-button @click="resetForm">重置</el-button>
       </el-form-item>
     </el-form>
@@ -40,13 +40,16 @@
 </template>
 
 <script>
+const mockData = require('../mock/data');
 export default {
-  data() {
+  data: function() {
     return {
+      isEdit: false,
       form: {
+        id: null,
         name: '',
         description: '',
-        price: '',
+        price: 0,
         categoryId: '',
         images: ''
       },
@@ -61,7 +64,14 @@ export default {
         ],
         price: [
           { required: true, message: '请输入商品价格', trigger: 'blur' },
-          { type: 'number', min: 0.01, message: '价格必须大于 0', trigger: 'blur' }
+          { validator: function(rule, value, callback) {
+              var numValue = Number(value);
+              if (isNaN(numValue) || numValue <= 0) {
+                callback(new Error('价格必须大于 0'));
+              } else {
+                callback();
+              }
+            }, trigger: 'blur' }
         ],
         categoryId: [
           { required: true, message: '请选择商品分类', trigger: 'blur' }
@@ -71,50 +81,96 @@ export default {
       imageList: []
     }
   },
-  mounted() {
+  mounted: function() {
     this.loadCategories();
+    var id = this.$route.query.id || this.$route.params.id;
+    if (id) {
+      this.isEdit = true;
+      this.loadProduct(id);
+    }
   },
   methods: {
-    loadCategories() {
-      this.$axios.get('/api/category/list')
-        .then(response => {
-          if (response.data.success) {
-            this.categories = response.data.categories;
-          }
-        })
-        .catch(error => {
-          this.$message.error('加载分类失败：' + error.message);
-        });
+    loadCategories: function() {
+      // 使用模拟数据
+      this.categories = mockData.categories;
+      this.$message.success('加载分类成功', { duration: 500 });
     },
-    handleImageChange(file) {
+    handleImageChange: function(file) {
       // 这里可以处理图片上传逻辑，暂时只是预览
       this.imageList.push(URL.createObjectURL(file.raw));
       // 实际项目中需要将图片上传到服务器，然后将图片URL保存到form.images
       this.form.images = this.imageList.join(',');
     },
-    publish() {
-      this.$refs.form.validate((valid) => {
+    loadProduct: function(id) {
+      // 使用模拟数据加载商品信息
+      var product = mockData.products.find(function(p) {
+        return p.id === parseInt(id);
+      });
+      if (product) {
+        this.form = {
+          id: product.id,
+          name: product.name,
+          description: product.description,
+          price: product.price,
+          categoryId: product.categoryId,
+          images: product.images
+        };
+        // 处理图片列表
+        if (product.images) {
+          this.imageList = product.images.split(',');
+        }
+      } else {
+        this.$message.error('商品不存在');
+        this.$router.push('/my-products');
+      }
+    },
+    publish: function() {
+      this.$refs.form.validate(function(valid) {
         if (valid) {
           // 获取当前用户ID
-          const user = JSON.parse(localStorage.getItem('user'));
-          this.form.userId = user.id;
+          var user = JSON.parse(localStorage.getItem('user'));
           
-          this.$axios.post('/api/product/publish', this.form)
-            .then(response => {
-              if (response.data.success) {
-                this.$message.success('发布成功');
-                this.$router.push('/my-products');
-              } else {
-                this.$message.error(response.data.message);
-              }
-            })
-            .catch(error => {
-              this.$message.error('发布失败：' + error.message);
-            });
+          if (this.isEdit) {
+            // 使用模拟数据更新商品
+            var index = mockData.products.findIndex(function(p) {
+              return p.id === this.form.id;
+            }.bind(this));
+            if (index !== -1) {
+              var product = mockData.products[index];
+              product.name = this.form.name;
+              product.description = this.form.description;
+              product.price = Number(this.form.price);
+              product.images = this.form.images;
+              product.categoryId = Number(this.form.categoryId);
+              product.updatedAt = new Date();
+              this.$message.success('修改成功');
+              this.$router.push('/my-products');
+            } else {
+              this.$message.error('商品不存在');
+            }
+          } else {
+            // 使用模拟数据发布商品
+            var newProduct = {
+              id: mockData.products.length + 1,
+              name: this.form.name,
+              description: this.form.description,
+              price: Number(this.form.price),
+              images: this.form.images,
+              categoryId: Number(this.form.categoryId),
+              sellerId: user.id,
+              status: 1,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            };
+            
+            mockData.products.push(newProduct);
+            this.$message.success('发布成功');
+            this.$router.push('/my-products');
+          }
         }
-      });
+      }.bind(this));
     },
-    resetForm() {
+    resetForm: function() {
       this.$refs.form.resetFields();
       this.imageList = [];
     }
@@ -124,29 +180,128 @@ export default {
 
 <style scoped>
 .product-publish-container {
-  width: 600px;
-  margin: 50px auto;
-  padding: 20px;
-  border: 1px solid #eaeaea;
-  border-radius: 5px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  width: 800px;
+  margin: 30px auto;
+  padding: 30px;
+  border-radius: 8px;
+  background-color: #ffffff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
 h2 {
   text-align: center;
+  margin-bottom: 30px;
+  font-size: 24px;
+  color: #303133;
+  font-weight: 600;
+}
+
+.el-form {
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.el-form-item {
   margin-bottom: 20px;
 }
 
+.el-form-item__label {
+  font-size: 15px;
+  font-weight: 500;
+  color: #303133;
+}
+
+.el-input,
+.el-select,
+.el-textarea {
+  width: 100%;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.el-input:focus,
+.el-select:focus,
+.el-textarea:focus {
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2);
+  border-color: #409EFF;
+}
+
 .image-preview {
-  margin-top: 10px;
+  margin-top: 16px;
   display: flex;
   flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px;
+  background-color: #ffffff;
+  border-radius: 4px;
+  border: 1px solid #e4e7ed;
 }
 
 .preview-image {
-  width: 100px;
-  height: 100px;
-  margin-right: 10px;
-  margin-bottom: 10px;
+  width: 120px;
+  height: 120px;
+  border-radius: 4px;
+  object-fit: cover;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.preview-image:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.el-upload {
+  margin-bottom: 16px;
+}
+
+.el-upload__tip {
+  font-size: 14px;
+  color: #909399;
+  margin-top: 8px;
+}
+
+.el-form-item:last-child {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 30px;
+}
+
+.el-button {
+  padding: 10px 24px;
+  font-size: 15px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.el-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.el-button--primary {
+  background-color: #409EFF;
+  border-color: #409EFF;
+}
+
+.el-button--primary:hover {
+  background-color: #66b1ff;
+  border-color: #66b1ff;
+}
+
+/* 响应式设计 */
+@media (max-width: 800px) {
+  .product-publish-container {
+    width: 95%;
+    padding: 20px;
+  }
+  
+  .preview-image {
+    width: 100px;
+    height: 100px;
+  }
 }
 </style>

@@ -21,8 +21,9 @@
 </template>
 
 <script>
+const mockData = require('../mock/data');
 export default {
-  data() {
+  data: function() {
     return {
       form: {
         username: '',
@@ -39,29 +40,30 @@ export default {
     }
   },
   methods: {
-    login() {
-      this.$refs.form.validate((valid) => {
+    login: function() {
+      this.$refs.form.validate(function(valid) {
         if (valid) {
-          this.$axios.post('/api/user/login', this.form)
-            .then(response => {
-              if (response.data.success) {
-                this.$message.success('登录成功');
-                localStorage.setItem('user', JSON.stringify(response.data.user));
-                this.$router.push('/');
-              } else {
-                this.$message.error(response.data.message);
-              }
-            })
-            .catch(error => {
-              this.$message.error('登录失败：' + error.message);
-            });
+          // 使用模拟数据进行登录验证
+          const user = mockData.users.find(function(u) {
+            return u.username === this.form.username && this.form.password === '123456';
+          }.bind(this));
+          if (user) {
+            this.$message.success('登录成功');
+            localStorage.setItem('user', JSON.stringify(user));
+            this.$router.push('/');
+          } else {
+            this.$message.error('用户名或密码错误');
+          }
+        } else {
+          this.$message.error('请检查表单信息');
+          return false;
         }
-      });
+      }.bind(this));
     },
-    resetForm() {
+    resetForm: function() {
       this.$refs.form.resetFields();
     },
-    goToRegister() {
+    goToRegister: function() {
       this.$router.push('/register');
     }
   }

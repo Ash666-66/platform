@@ -12,9 +12,9 @@
           <p class="product-description">{{ product.description }}</p>
           <div class="seller-info">
             <h4>卖家信息</h4>
-            <p>用户名：{{ seller?.username || '未知' }}</p>
-            <p>联系邮箱：{{ seller?.email || '未知' }}</p>
-            <p>联系电话：{{ seller?.phone || '未知' }}</p>
+            <p>用户名：{{ seller && seller.username || '未知' }}</p>
+            <p>联系邮箱：{{ seller && seller.email || '未知' }}</p>
+            <p>联系电话：{{ seller && seller.phone || '未知' }}</p>
           </div>
           <el-button type="primary" @click="contactSeller" style="margin-top: 20px;">联系卖家</el-button>
         </div>
@@ -25,35 +25,35 @@
 </template>
 
 <script>
+const mockData = require('../mock/data');
 export default {
-  data() {
+  data: function() {
     return {
       product: null,
       seller: null,
       imageList: []
     }
   },
-  mounted() {
+  mounted: function() {
     this.loadProductDetail();
   },
   methods: {
-    loadProductDetail() {
-      const id = this.$route.params.id;
-      this.$axios.get(`/api/product/detail/${id}`)
-        .then(response => {
-          if (response.data.success) {
-            this.product = response.data.product;
-            this.imageList = this.product.images ? this.product.images.split(',') : [];
-            this.loadSellerInfo(this.product.userId);
-          } else {
-            this.$message.error(response.data.message);
-          }
-        })
-        .catch(error => {
-          this.$message.error('加载商品详情失败：' + error.message);
-        });
+    loadProductDetail: function() {
+      var id = this.$route.params.id;
+      // 使用模拟数据
+      var product = mockData.products.find(function(p) {
+        return p.id === parseInt(id);
+      });
+      if (product) {
+        this.product = product;
+        this.imageList = this.product.images ? this.product.images.split(',') : [];
+        this.loadSellerInfo(this.product.sellerId);
+        this.$message.success('加载商品详情成功');
+      } else {
+        this.$message.error('商品不存在');
+      }
     },
-    loadSellerInfo(userId) {
+    loadSellerInfo: function(userId) {
       // 这里需要一个获取用户信息的API，暂时模拟
       this.seller = {
         username: '卖家123',
@@ -61,7 +61,7 @@ export default {
         phone: '13800138000'
       };
     },
-    contactSeller() {
+    contactSeller: function() {
       // 这里可以跳转到消息页面或者直接打开聊天窗口
       this.$message.info('联系卖家功能待实现');
     }
@@ -71,72 +71,142 @@ export default {
 
 <style scoped>
 .product-detail-container {
-  width: 1000px;
-  margin: 50px auto;
-  padding: 20px;
-  border: 1px solid #eaeaea;
-  border-radius: 5px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  width: 1200px;
+  margin: 30px auto;
+  padding: 30px;
+  border-radius: 8px;
+  background-color: #ffffff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
 h2 {
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
+  font-size: 24px;
+  color: #303133;
+  font-weight: 600;
 }
 
 .product-content {
   display: flex;
-  gap: 30px;
+  gap: 40px;
+  align-items: flex-start;
 }
 
 .product-images {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 16px;
+  padding: 20px;
+  background-color: #f5f7fa;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .detail-image {
   width: 100%;
-  height: 300px;
+  height: 400px;
   object-fit: cover;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.detail-image:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
 }
 
 .product-info {
   flex: 1;
+  padding: 20px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.product-name {
+.product-info h3 {
   font-size: 24px;
-  font-weight: bold;
-  margin-bottom: 10px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #303133;
+  line-height: 1.3;
 }
 
 .product-price {
-  font-size: 28px;
-  font-weight: bold;
+  font-size: 32px;
+  font-weight: 700;
   color: #ff4d4f;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .product-description {
   font-size: 16px;
-  line-height: 1.5;
-  margin-bottom: 30px;
-  color: #666;
+  line-height: 1.6;
+  margin-bottom: 32px;
+  color: #606266;
+  background-color: #f9f9f9;
+  padding: 16px;
+  border-radius: 4px;
+  border-left: 4px solid #409EFF;
 }
 
 .seller-info {
-  border-top: 1px solid #eaeaea;
-  padding-top: 20px;
+  border-top: 1px solid #e4e7ed;
+  padding-top: 24px;
+  margin-bottom: 24px;
 }
 
 .seller-info h4 {
-  margin-bottom: 10px;
+  margin-bottom: 16px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
 }
 
 .seller-info p {
-  margin-bottom: 5px;
-  color: #666;
+  margin-bottom: 8px;
+  color: #606266;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.product-card .el-button {
+  width: 100%;
+  font-size: 16px;
+  padding: 12px;
+  transition: all 0.3s ease;
+  border-radius: 4px;
+}
+
+.product-card .el-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+  .product-detail-container {
+    width: 95%;
+    padding: 20px;
+  }
+  
+  .product-content {
+    flex-direction: column;
+  }
+  
+  .product-images {
+    width: 100%;
+  }
+  
+  .product-info {
+    width: 100%;
+  }
+  
+  .detail-image {
+    height: 300px;
+  }
 }
 </style>

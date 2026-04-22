@@ -35,63 +35,49 @@
 </template>
 
 <script>
+const mockData = require('../mock/data');
 export default {
-  data() {
+  data: function() {
     return {
       messages: []
     }
   },
-  mounted() {
+  mounted: function() {
     this.loadMessages();
   },
   methods: {
-    loadMessages() {
-      const user = JSON.parse(localStorage.getItem('user'));
-      this.$axios.get(`/api/message/receiver/${user.id}`)
-        .then(response => {
-          if (response.data.success) {
-            this.messages = response.data.messages;
-            // 这里需要加载发送者信息，暂时模拟
-            this.messages.forEach(message => {
-              message.senderName = '用户123';
-            });
-          }
-        })
-        .catch(error => {
-          this.$message.error('加载消息失败：' + error.message);
-        });
+    loadMessages: function() {
+      // 使用模拟数据
+      this.messages = mockData.messages;
+      // 添加发送者信息
+      this.messages.forEach(function(message) {
+        message.senderName = '用户123';
+      });
+      this.$message.success('加载消息成功');
     },
-    viewDetail(id) {
-      this.$router.push(`/message-detail/${id}`);
+    viewDetail: function(id) {
+      this.$router.push('/message-detail/' + id);
     },
-    markAsRead(id) {
-      this.$axios.put(`/api/message/mark-as-read/${id}`)
-        .then(response => {
-          if (response.data.success) {
-            this.$message.success('标记已读成功');
-            this.loadMessages();
-          } else {
-            this.$message.error(response.data.message);
-          }
-        })
-        .catch(error => {
-          this.$message.error('标记已读失败：' + error.message);
-        });
+    markAsRead: function(id) {
+      // 使用模拟数据标记消息为已读
+      var message = mockData.messages.find(function(m) {
+        return m.id === id;
+      });
+      if (message) {
+        message.status = 1;
+        this.$message.success('标记已读成功');
+        this.loadMessages();
+      } else {
+        this.$message.error('消息不存在');
+      }
     },
-    markAllAsRead() {
-      const user = JSON.parse(localStorage.getItem('user'));
-      this.$axios.put(`/api/message/mark-all-as-read/${user.id}`)
-        .then(response => {
-          if (response.data.success) {
-            this.$message.success('全部标记已读成功');
-            this.loadMessages();
-          } else {
-            this.$message.error(response.data.message);
-          }
-        })
-        .catch(error => {
-          this.$message.error('全部标记已读失败：' + error.message);
-        });
+    markAllAsRead: function() {
+      // 使用模拟数据标记所有消息为已读
+      mockData.messages.forEach(function(message) {
+        message.status = 1;
+      });
+      this.$message.success('全部标记已读成功');
+      this.loadMessages();
     }
   }
 }

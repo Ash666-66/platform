@@ -35,8 +35,9 @@
 </template>
 
 <script>
+const mockData = require('../mock/data');
 export default {
-  data() {
+  data: function() {
     return {
       products: [],
       categories: [],
@@ -47,69 +48,50 @@ export default {
       total: 0
     }
   },
-  mounted() {
+  mounted: function() {
     this.loadCategories();
     this.loadProducts();
   },
   methods: {
-    loadCategories() {
-      this.$axios.get('/api/category/list')
-        .then(response => {
-          if (response.data.success) {
-            this.categories = response.data.categories;
-          }
-        })
-        .catch(error => {
-          this.$message.error('加载分类失败：' + error.message);
-        });
+    loadCategories: function() {
+      // 使用模拟数据
+      this.categories = mockData.categories;
+      this.$message.success('加载分类成功', { duration: 500 });
     },
-    loadProducts() {
-      this.$axios.get('/api/product/list')
-        .then(response => {
-          if (response.data.success) {
-            this.products = response.data.products;
-            this.total = this.products.length;
-          }
-        })
-        .catch(error => {
-          this.$message.error('加载商品失败：' + error.message);
-        });
+    loadProducts: function() {
+      // 使用模拟数据
+      this.products = mockData.products;
+      this.total = this.products.length;
+      this.$message.success('加载商品成功', { duration: 500 });
     },
-    search() {
+    search: function() {
+      // 使用模拟数据进行搜索和筛选
+      var filteredProducts = mockData.products;
+      
       if (this.keyword) {
-        this.$axios.get(`/api/product/search?keyword=${this.keyword}`)
-          .then(response => {
-            if (response.data.success) {
-              this.products = response.data.products;
-              this.total = this.products.length;
-            }
-          })
-          .catch(error => {
-            this.$message.error('搜索失败：' + error.message);
-          });
-      } else if (this.categoryId) {
-        this.$axios.get(`/api/product/category/${this.categoryId}`)
-          .then(response => {
-            if (response.data.success) {
-              this.products = response.data.products;
-              this.total = this.products.length;
-            }
-          })
-          .catch(error => {
-            this.$message.error('搜索失败：' + error.message);
-          });
-      } else {
-        this.loadProducts();
+        filteredProducts = filteredProducts.filter(function(p) {
+          return p.name.includes(this.keyword) || p.description.includes(this.keyword);
+        }.bind(this));
       }
+      
+      if (this.categoryId) {
+        filteredProducts = filteredProducts.filter(function(p) {
+          return p.categoryId === parseInt(this.categoryId);
+        }.bind(this));
+      }
+      
+      this.products = filteredProducts;
+      this.total = this.products.length;
+      this.$message.success('搜索和筛选成功');
     },
-    viewDetail(id) {
-      this.$router.push(`/product-detail/${id}`);
+    viewDetail: function(id) {
+      this.$router.push('/product-detail/' + id);
     },
-    handleSizeChange(val) {
+    handleSizeChange: function(val) {
       this.pageSize = val;
       this.loadProducts();
     },
-    handleCurrentChange(val) {
+    handleCurrentChange: function(val) {
       this.currentPage = val;
       this.loadProducts();
     }
@@ -119,79 +101,160 @@ export default {
 
 <style scoped>
 .product-list-container {
-  width: 1000px;
-  margin: 50px auto;
-  padding: 20px;
-  border: 1px solid #eaeaea;
-  border-radius: 5px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  width: 1200px;
+  margin: 30px auto;
+  padding: 30px;
+  border-radius: 8px;
+  background-color: #ffffff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
 h2 {
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
+  font-size: 24px;
+  color: #303133;
+  font-weight: 600;
 }
 
 .search-bar {
-  margin-bottom: 20px;
+  margin-bottom: 30px;
   display: flex;
   align-items: center;
+  background-color: #f5f7fa;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin-bottom: 30px;
 }
 
 .product-card {
-  height: 350px;
+  height: 380px;
   display: flex;
   flex-direction: column;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
 }
 
 .product-image {
   width: 100%;
-  height: 200px;
+  height: 220px;
   object-fit: cover;
-  margin-bottom: 10px;
+  transition: all 0.3s ease;
+}
+
+.product-card:hover .product-image {
+  transform: scale(1.05);
 }
 
 .product-info {
   flex: 1;
   display: flex;
   flex-direction: column;
+  padding: 16px;
 }
 
-.product-name {
+.product-info h3 {
   font-size: 16px;
-  font-weight: bold;
-  margin-bottom: 5px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #303133;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .product-price {
-  font-size: 18px;
-  font-weight: bold;
+  font-size: 20px;
+  font-weight: 700;
   color: #ff4d4f;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .product-description {
   font-size: 14px;
-  color: #666;
-  margin-bottom: 10px;
+  color: #606266;
+  margin-bottom: 16px;
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
+  line-height: 1.5;
+}
+
+.product-card .el-button {
+  margin-top: auto;
+  width: 100%;
+  transition: all 0.3s ease;
+}
+
+.product-card .el-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .pagination {
   display: flex;
   justify-content: center;
-  margin-top: 20px;
+  margin-top: 30px;
+}
+
+.pagination .el-pagination {
+  display: flex;
+  align-items: center;
+}
+
+.pagination .el-pagination__sizes {
+  margin-right: 16px;
+}
+
+.pagination .el-pagination__total {
+  margin-right: 16px;
+  color: #606266;
+}
+
+.pagination .el-pager li {
+  margin: 0 4px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.pagination .el-pager li:hover {
+  color: #409EFF;
+  border-color: #409EFF;
+}
+
+.pagination .el-pager li.active {
+  background-color: #409EFF;
+  border-color: #409EFF;
+  color: white;
+}
+
+.pagination .el-pagination__prev, .pagination .el-pagination__next {
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.pagination .el-pagination__prev:hover, .pagination .el-pagination__next:hover {
+  color: #409EFF;
+  border-color: #409EFF;
 }
 </style>

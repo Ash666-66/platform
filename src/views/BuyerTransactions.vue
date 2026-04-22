@@ -30,62 +30,60 @@
 </template>
 
 <script>
+const mockData = require('../mock/data');
 export default {
-  data() {
+  data: function() {
     return {
       transactions: []
     }
   },
-  mounted() {
+  mounted: function() {
     this.loadBuyerTransactions();
   },
   methods: {
-    loadBuyerTransactions() {
-      const user = JSON.parse(localStorage.getItem('user'));
-      this.$axios.get(`/api/transaction/buyer/${user.id}`)
-        .then(response => {
-          if (response.data.success) {
-            this.transactions = response.data.transactions;
-            // 这里需要加载商品信息，暂时模拟
-            this.transactions.forEach(transaction => {
-              transaction.productName = '商品名称';
-            });
-          }
-        })
-        .catch(error => {
-          this.$message.error('加载交易记录失败：' + error.message);
+    loadBuyerTransactions: function() {
+      var user = JSON.parse(localStorage.getItem('user'));
+      // 使用模拟数据加载买家的交易记录
+      this.transactions = mockData.transactions.filter(function(t) {
+        return t.buyerId === user.id;
+      });
+      // 加载商品信息
+      this.transactions.forEach(function(transaction) {
+        var product = mockData.products.find(function(p) {
+          return p.id === transaction.productId;
         });
+        transaction.productName = product ? product.name : '商品名称';
+      });
+      this.$message.success('加载交易记录成功', { duration: 500 });
     },
-    viewDetail(id) {
-      this.$router.push(`/transaction-detail/${id}`);
+    viewDetail: function(id) {
+      this.$router.push('/transaction-detail/' + id);
     },
-    pay(id) {
-      this.$axios.put(`/api/transaction/update-status/${id}?status=4`)
-        .then(response => {
-          if (response.data.success) {
-            this.$message.success('付款成功');
-            this.loadBuyerTransactions();
-          } else {
-            this.$message.error(response.data.message);
-          }
-        })
-        .catch(error => {
-          this.$message.error('付款失败：' + error.message);
-        });
+    pay: function(id) {
+      // 使用模拟数据更新交易状态
+      var transaction = mockData.transactions.find(function(t) {
+        return t.id === id;
+      });
+      if (transaction) {
+        transaction.status = 4;
+        this.$message.success('付款成功');
+        this.loadBuyerTransactions();
+      } else {
+        this.$message.error('交易不存在');
+      }
     },
-    confirmReceipt(id) {
-      this.$axios.put(`/api/transaction/update-status/${id}?status=8`)
-        .then(response => {
-          if (response.data.success) {
-            this.$message.success('确认收货成功');
-            this.loadBuyerTransactions();
-          } else {
-            this.$message.error(response.data.message);
-          }
-        })
-        .catch(error => {
-          this.$message.error('确认收货失败：' + error.message);
-        });
+    confirmReceipt: function(id) {
+      // 使用模拟数据更新交易状态
+      var transaction = mockData.transactions.find(function(t) {
+        return t.id === id;
+      });
+      if (transaction) {
+        transaction.status = 8;
+        this.$message.success('确认收货成功');
+        this.loadBuyerTransactions();
+      } else {
+        this.$message.error('交易不存在');
+      }
     }
   }
 }

@@ -23,8 +23,9 @@
 </template>
 
 <script>
+const mockData = require('../mock/data');
 export default {
-  data() {
+  data: function() {
     return {
       form: {
         username: '',
@@ -53,25 +54,38 @@ export default {
     }
   },
   methods: {
-    register() {
-      this.$refs.form.validate((valid) => {
+    register: function() {
+      this.$refs.form.validate(function(valid) {
         if (valid) {
-          this.$axios.post('/api/user/register', this.form)
-            .then(response => {
-              if (response.data.success) {
-                this.$message.success('注册成功');
-                this.$router.push('/login');
-              } else {
-                this.$message.error(response.data.message);
-              }
-            })
-            .catch(error => {
-              this.$message.error('注册失败：' + error.message);
-            });
+          // 使用模拟数据进行注册
+          const existingUser = mockData.users.find(function(u) {
+            return u.username === this.form.username || u.email === this.form.email;
+          }.bind(this));
+          if (existingUser) {
+            this.$message.error('用户名或邮箱已存在');
+          } else {
+            const newUser = {
+              id: mockData.users.length + 1,
+              username: this.form.username,
+              password: '$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', // 模拟加密密码
+              email: this.form.email,
+              phone: this.form.phone,
+              avatar: '',
+              status: 1,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            };
+            mockData.users.push(newUser);
+            this.$message.success('注册成功', 1500);
+            this.$router.push('/login');
+          }
+        } else {
+          this.$message.error('请检查表单信息');
+          return false;
         }
-      });
+      }.bind(this));
     },
-    resetForm() {
+    resetForm: function() {
       this.$refs.form.resetFields();
     }
   }

@@ -18,7 +18,7 @@
               <el-tag v-else-if="transaction.status === 8" type="success">已完成</el-tag>
               <el-tag v-else type="danger">已取消</el-tag>
             </el-descriptions-item>
-            <el-descriptions-item label="商品名称">{{ product?.name || '未知' }}</el-descriptions-item>
+            <el-descriptions-item label="商品名称">{{ product && product.name || '未知' }}</el-descriptions-item>
             <el-descriptions-item label="交易价格">￥{{ transaction.price }}</el-descriptions-item>
             <el-descriptions-item label="创建时间">{{ transaction.createdAt }}</el-descriptions-item>
             <el-descriptions-item label="更新时间">{{ transaction.updatedAt }}</el-descriptions-item>
@@ -27,12 +27,12 @@
         <div class="user-info">
           <h3>用户信息</h3>
           <el-descriptions :column="2">
-            <el-descriptions-item label="买家">{{ buyer?.username || '未知' }}</el-descriptions-item>
-            <el-descriptions-item label="卖家">{{ seller?.username || '未知' }}</el-descriptions-item>
-            <el-descriptions-item label="买家邮箱">{{ buyer?.email || '未知' }}</el-descriptions-item>
-            <el-descriptions-item label="卖家邮箱">{{ seller?.email || '未知' }}</el-descriptions-item>
-            <el-descriptions-item label="买家电话">{{ buyer?.phone || '未知' }}</el-descriptions-item>
-            <el-descriptions-item label="卖家电话">{{ seller?.phone || '未知' }}</el-descriptions-item>
+            <el-descriptions-item label="买家">{{ buyer && buyer.username || '未知' }}</el-descriptions-item>
+            <el-descriptions-item label="卖家">{{ seller && seller.username || '未知' }}</el-descriptions-item>
+            <el-descriptions-item label="买家邮箱">{{ buyer && buyer.email || '未知' }}</el-descriptions-item>
+            <el-descriptions-item label="卖家邮箱">{{ seller && seller.email || '未知' }}</el-descriptions-item>
+            <el-descriptions-item label="买家电话">{{ buyer && buyer.phone || '未知' }}</el-descriptions-item>
+            <el-descriptions-item label="卖家电话">{{ seller && seller.phone || '未知' }}</el-descriptions-item>
           </el-descriptions>
         </div>
         <div class="action-buttons" v-if="user">
@@ -48,8 +48,9 @@
 </template>
 
 <script>
+const mockData = require('../mock/data');
 export default {
-  data() {
+  data: function() {
     return {
       transaction: null,
       product: null,
@@ -58,35 +59,41 @@ export default {
       user: null
     }
   },
-  mounted() {
+  mounted: function() {
     this.user = JSON.parse(localStorage.getItem('user'));
     this.loadTransactionDetail();
   },
   methods: {
-    loadTransactionDetail() {
-      const id = this.$route.params.id;
-      this.$axios.get(`/api/transaction/detail/${id}`)
-        .then(response => {
-          if (response.data.success) {
-            this.transaction = response.data.transaction;
-            this.loadProductInfo(this.transaction.productId);
-            this.loadBuyerInfo(this.transaction.buyerId);
-            this.loadSellerInfo(this.transaction.sellerId);
-          } else {
-            this.$message.error(response.data.message);
-          }
-        })
-        .catch(error => {
-          this.$message.error('加载交易详情失败：' + error.message);
-        });
+    loadTransactionDetail: function() {
+      var id = this.$route.params.id;
+      // 使用模拟数据
+      var transaction = mockData.transactions.find(function(t) {
+        return t.id === parseInt(id);
+      });
+      if (transaction) {
+        this.transaction = transaction;
+        this.loadProductInfo(this.transaction.productId);
+        this.loadBuyerInfo(this.transaction.buyerId);
+        this.loadSellerInfo(this.transaction.sellerId);
+        this.$message.success('加载交易详情成功');
+      } else {
+        this.$message.error('交易不存在');
+      }
     },
-    loadProductInfo(productId) {
-      // 这里需要一个获取商品信息的API，暂时模拟
-      this.product = {
-        name: '商品名称'
-      };
+    loadProductInfo: function(productId) {
+      // 使用模拟数据获取商品信息
+      var product = mockData.products.find(function(p) {
+        return p.id === productId;
+      });
+      if (product) {
+        this.product = product;
+      } else {
+        this.product = {
+          name: '商品名称'
+        };
+      }
     },
-    loadBuyerInfo(buyerId) {
+    loadBuyerInfo: function(buyerId) {
       // 这里需要一个获取用户信息的API，暂时模拟
       this.buyer = {
         username: '买家123',
@@ -94,7 +101,7 @@ export default {
         phone: '13900139000'
       };
     },
-    loadSellerInfo(sellerId) {
+    loadSellerInfo: function(sellerId) {
       // 这里需要一个获取用户信息的API，暂时模拟
       this.seller = {
         username: '卖家123',
@@ -102,61 +109,57 @@ export default {
         phone: '13800138000'
       };
     },
-    pay() {
-      this.$axios.put(`/api/transaction/update-status/${this.transaction.id}?status=4`)
-        .then(response => {
-          if (response.data.success) {
-            this.$message.success('付款成功');
-            this.loadTransactionDetail();
-          } else {
-            this.$message.error(response.data.message);
-          }
-        })
-        .catch(error => {
-          this.$message.error('付款失败：' + error.message);
-        });
+    pay: function() {
+      // 使用模拟数据更新交易状态
+      var transaction = mockData.transactions.find(function(t) {
+        return t.id === this.transaction.id;
+      }.bind(this));
+      if (transaction) {
+        transaction.status = 4;
+        this.$message.success('付款成功');
+        this.loadTransactionDetail();
+      } else {
+        this.$message.error('交易不存在');
+      }
     },
-    confirmReceipt() {
-      this.$axios.put(`/api/transaction/update-status/${this.transaction.id}?status=8`)
-        .then(response => {
-          if (response.data.success) {
-            this.$message.success('确认收货成功');
-            this.loadTransactionDetail();
-          } else {
-            this.$message.error(response.data.message);
-          }
-        })
-        .catch(error => {
-          this.$message.error('确认收货失败：' + error.message);
-        });
+    confirmReceipt: function() {
+      // 使用模拟数据更新交易状态
+      var transaction = mockData.transactions.find(function(t) {
+        return t.id === this.transaction.id;
+      }.bind(this));
+      if (transaction) {
+        transaction.status = 8;
+        this.$message.success('确认收货成功');
+        this.loadTransactionDetail();
+      } else {
+        this.$message.error('交易不存在');
+      }
     },
-    confirmTransaction() {
-      this.$axios.put(`/api/transaction/update-status/${this.transaction.id}?status=2`)
-        .then(response => {
-          if (response.data.success) {
-            this.$message.success('确认交易成功');
-            this.loadTransactionDetail();
-          } else {
-            this.$message.error(response.data.message);
-          }
-        })
-        .catch(error => {
-          this.$message.error('确认交易失败：' + error.message);
-        });
+    confirmTransaction: function() {
+      // 使用模拟数据更新交易状态
+      var transaction = mockData.transactions.find(function(t) {
+        return t.id === this.transaction.id;
+      }.bind(this));
+      if (transaction) {
+        transaction.status = 2;
+        this.$message.success('确认交易成功');
+        this.loadTransactionDetail();
+      } else {
+        this.$message.error('交易不存在');
+      }
     },
-    ship() {
-      this.$axios.put(`/api/transaction/update-status/${this.transaction.id}?status=6`)
-        .then(response => {
-          if (response.data.success) {
-            this.$message.success('发货成功');
-            this.loadTransactionDetail();
-          } else {
-            this.$message.error(response.data.message);
-          }
-        })
-        .catch(error => {
-          this.$message.error('发货失败：' + error.message);
-        });
+    ship: function() {
+      // 使用模拟数据更新交易状态
+      var transaction = mockData.transactions.find(function(t) {
+        return t.id === this.transaction.id;
+      }.bind(this));
+      if (transaction) {
+        transaction.status = 6;
+        this.$message.success('发货成功');
+        this.loadTransactionDetail();
+      } else {
+        this.$message.error('交易不存在');
+      }
     }
   }
 }
